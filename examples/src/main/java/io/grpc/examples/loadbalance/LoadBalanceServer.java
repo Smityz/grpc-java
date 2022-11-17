@@ -30,12 +30,12 @@ import java.util.logging.Logger;
 /**
  * Server that manages startup/shutdown of a {@code Greeter} server.
  */
+
 public class LoadBalanceServer {
     private static final Logger logger = Logger.getLogger(LoadBalanceServer.class.getName());
-
+    static public final int serverCount = 3;
+    static public final int startPort = 50051;
     private Server[] servers;
-    int serverCount = 3;
-    int startPort = 50051;
 
     private void start() throws IOException {
         servers = new Server[serverCount];
