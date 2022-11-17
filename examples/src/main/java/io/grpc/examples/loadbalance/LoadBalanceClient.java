@@ -16,15 +16,13 @@
 
 package io.grpc.examples.loadbalance;
 
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
+import io.grpc.*;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloWorldServer;
 
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,16 +67,21 @@ public class LoadBalanceClient {
 
 
     public static void main(String[] args) throws Exception {
-        String user = "world";
+        NameResolverRegistry.getDefaultRegistry().register(new ExampleNameResolverProvider());
+
+        URI u = new URI(String.format("%s:%s", exampleScheme, "resolver.example.grpc.io"));
+        System.out.println(u.toString());
         ManagedChannel channel = ManagedChannelBuilder.forTarget(
-                // Dial to "example:///resolver.example.grpc.io"
-                String.format("%s:///%s", exampleScheme, "resolver.example.grpc.io"))
+                        // Dial to "example:///resolver.example.grpc.io"
+                        new URI(String.format("%s:%s", exampleScheme, "resolver.example.grpc.io")).toString())
                 .defaultLoadBalancingPolicy("round_robin")
                 .usePlaintext()
                 .build();
         try {
             LoadBalanceClient client = new LoadBalanceClient(channel);
-            client.greet(user);
+            for (int i = 0; i < 10; i++) {
+                client.greet("user");
+            }
         } finally {
             // ManagedChannels use resources like threads and TCP connections. To prevent leaking these
             // resources the channel should be shut down when it will no longer be used. If it may be used
