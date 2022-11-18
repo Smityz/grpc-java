@@ -7,7 +7,7 @@ import java.net.URI;
 
 public class ExampleNameResolverProvider extends NameResolverProvider {
     public static final String exampleScheme = "example";
-    
+
     @Override
     public NameResolver newNameResolver(URI targetUri, NameResolver.Args args) {
         return new ExampleNameResolver(targetUri.toString());
@@ -20,10 +20,11 @@ public class ExampleNameResolverProvider extends NameResolverProvider {
 
     @Override
     protected int priority() {
-        return 10;
+        return 5;
     }
 
     @Override
+    // gRPC choose the first NameResolverProvider that supports the target URI scheme.
     public String getDefaultScheme() {
         return exampleScheme;
     }

@@ -27,10 +27,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-/**
- * Server that manages startup/shutdown of a {@code Greeter} server.
- */
-
 public class LoadBalanceServer {
     private static final Logger logger = Logger.getLogger(LoadBalanceServer.class.getName());
     static public final int serverCount = 3;
@@ -50,7 +46,6 @@ public class LoadBalanceServer {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                // Use stderr here since the logger may have been reset by its JVM shutdown hook.
                 System.err.println("*** shutting down gRPC server since JVM is shutting down");
                 try {
                     LoadBalanceServer.this.stop();
@@ -70,9 +65,6 @@ public class LoadBalanceServer {
         }
     }
 
-    /**
-     * Await termination on the main thread since the grpc library uses daemon threads.
-     */
     private void blockUntilShutdown() throws InterruptedException {
         for (int i = 0; i < serverCount; i++) {
             if (servers[i] != null) {
@@ -81,9 +73,6 @@ public class LoadBalanceServer {
         }
     }
 
-    /**
-     * Main launches the server from the command line.
-     */
     public static void main(String[] args) throws IOException, InterruptedException {
         final LoadBalanceServer server = new LoadBalanceServer();
         server.start();

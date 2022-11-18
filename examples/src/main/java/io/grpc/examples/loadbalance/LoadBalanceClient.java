@@ -28,32 +28,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.grpc.examples.loadbalance.ExampleNameResolverProvider.exampleScheme;
-import static io.grpc.examples.loadbalance.LoadBalanceServer.serverCount;
 
-/**
- * A simple client that requests a greeting from the {@link HelloWorldServer}.
- */
 public class LoadBalanceClient {
     private static final Logger logger = Logger.getLogger(LoadBalanceClient.class.getName());
 
     private final GreeterGrpc.GreeterBlockingStub blockingStub;
 
-    /**
-     * Construct client for accessing HelloWorld server using the existing channel.
-     */
     public LoadBalanceClient(Channel channel) {
-        // 'channel' here is a Channel, not a ManagedChannel, so it is not this code's responsibility to
-        // shut it down.
-
-        // Passing Channels to code makes code easier to test and makes it easier to reuse Channels.
         blockingStub = GreeterGrpc.newBlockingStub(channel);
     }
 
-    /**
-     * Say hello to server.
-     */
     public void greet(String name) {
-        logger.info("Will try to greet " + name + " ...");
         HelloRequest request = HelloRequest.newBuilder().setName(name).build();
         HelloReply response;
         try {
@@ -69,23 +54,35 @@ public class LoadBalanceClient {
     public static void main(String[] args) throws Exception {
         NameResolverRegistry.getDefaultRegistry().register(new ExampleNameResolverProvider());
 
-        URI u = new URI(String.format("%s:%s", exampleScheme, "resolver.example.grpc.io"));
-        System.out.println(u.toString());
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(
-                        // Dial to "example:///resolver.example.grpc.io"
-                        new URI(String.format("%s:%s", exampleScheme, "resolver.example.grpc.io")).toString())
+        logger.info("Use default DNS resolver");
+        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:50051")
                 .defaultLoadBalancingPolicy("round_robin")
                 .usePlaintext()
                 .build();
         try {
             LoadBalanceClient client = new LoadBalanceClient(channel);
-            for (int i = 0; i < 10; i++) {
-                client.greet("user");
+            for (int i = 0; i < 5; i++) {
+                client.greet("request" + i);
             }
         } finally {
-            // ManagedChannels use resources like threads and TCP connections. To prevent leaking these
-            // resources the channel should be shut down when it will no longer be used. If it may be used
-            // again leave it running.
+            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        }
+
+        logger.info("Change to use example name resolver");
+        /**
+         * Dial to "example:///resolver.example.grpc.io", use {@link ExampleNameResolver} to create connection
+         */
+        channel = ManagedChannelBuilder.forTarget(
+                        String.format("%s:///%s", exampleScheme, "resolver.example.grpc.io"))
+                .defaultLoadBalancingPolicy("round_robin")
+                .usePlaintext()
+                .build();
+        try {
+            LoadBalanceClient client = new LoadBalanceClient(channel);
+            for (int i = 0; i < 5; i++) {
+                client.greet("request" + i);
+            }
+        } finally {
             channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
         }
     }
